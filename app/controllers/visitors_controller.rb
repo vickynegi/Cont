@@ -5,7 +5,7 @@ class VisitorsController < ApplicationController
   # this will save the details of the visitors and after details got saved, email will be sent to receiver
 	# to send the email oberver file is created
   def submission
-  	if @visitor
+  	unless @visitor.id.blank?
   		old_visitor
 	  else
 	  	new_visitor
@@ -20,14 +20,13 @@ class VisitorsController < ApplicationController
   end
 
   def find_visitor
-  	@visitor = Visitor.find_by(email: visitor_params[:email])
+  	@visitor = Visitor.find_by(email: visitor_params[:email]) || Visitor.new(visitor_params.except(:message))
+    @visitor.attributes= {locale: params.permit(:locale)[:locale], visitor_message: visitor_params[:message]}
+    @visitor.messages.build(description: visitor_params[:message])
   end
 
   # if visitor comes 1st time then details will be saved
   def new_visitor
-  	@visitor = Visitor.new(visitor_params.except(:message))
-  	@visitor.attributes= {locale: params.permit(:locale)[:locale], visitor_message: visitor_params[:message]}
-  	@visitor.messages.build(description: visitor_params[:message])
   	if @visitor.save!
   		flash[:alert] = t ('success_msg')
   	else
@@ -37,8 +36,6 @@ class VisitorsController < ApplicationController
   
   # if visitor comes 2nd, 3rd and so on times then details will be updated and messages will be saved
   def old_visitor
-  	@visitor.attributes= {locale: params.permit(:locale)[:locale], visitor_message: visitor_params[:message]}
-    @visitor.messages.build(description: visitor_params[:message])
     if @visitor.update(visitor_params.except(:message))
 			flash[:alert] = t ('success_msg')
 		else
